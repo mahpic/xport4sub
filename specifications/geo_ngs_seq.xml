@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+      name:(required)       Name of this template.
+      fileType:(required)   Output file type. Output file type should match the input template file type if specified.
+                            Allowed values: XML, EXCEL, CSV.
+      location:(optional)   location of the template file. If exists, a copy of this template will be populated as
+                            specified. Otherwise, the results will be populated into an newly created empty file.
+      outputFile:(optional) name for the output file, otherwise output file will be named -> yyyy-MM-dd_<template_name>.
+                            If no path is specified, output files will be created under "submission" folder.
+-->
+<TEMPLATE name="seq_template_v2.1" fileType="EXCEL" location="seq_template_v2.1.xls" outputFile="">
+    <!--Different parameters related to queries of the file are specified-->
+    <PARAMETERS>
+        <!--
+            id:(required)    Id of the parameter that will be used as a key in a query.
+            value:(required) The value that will replace the parameter matched by the id in the query.
+        -->
+        <PARAMETER id="EXPERIMENT_ID" value="E04"/>
+    </PARAMETERS>
+    <!--
+        A submission template often times have multiple worksheets for different types of data/metadata. For each
+        worksheet to be populated, a new sheet specification should be specified.
+    -->
+    <SHEETS>
+        <!--
+           name: (optional) Sheet name
+           index: (optional) index of sheet (it starts from zero).
+
+           NOTE: If both attributes exist, name will be considered first.
+           IMPORTANT: At least one of the attributes should be specified. Both attributes can not be left blank
+                      at the same time.
+        -->
+        <SHEET name="METADATA TEMPLATE" index="0">
+            <!--
+                Sometimes a worksheet may have multiple sections which should be populated with different information.
+                In those cases, multiple queries can be mapped to different sections of the worksheet using row & column
+                indices. In all other cases, each sheet would only have one corresponding query.
+            -->
+            <QUERIES>
+                <!--
+                    name:(optional)         name of this query.
+                    orientation:(optional)  if horizontal, records returned by the query will be inserted row by row.
+                                            When vertical, records will be inserted in a vertical fashion
+                                            (i.e., one column per record).
+                                            Allowed values: HORIZONTAL, VERTICAL. Default: HORIZONTAL
+                    headers:(optional)      If true, column labels will be inserted before the first record..
+                                            Allowed values: true, false. Default: false.
+                    startRow:(required)     Indicates which row to begin inserting the records.
+                    startColumn:(required)  Indicates which column to being inserting the records.
+                    shiftAfter:(optional)   For the template that has more than one section, and the number of rows or
+                                            columns are more than specified in template it has value of the index that
+                                            should be shifted
+                    IMPORTANT NOTE: These indices are 0-based. For example, A1 cell in excel would be (0,0) where as
+                    B3 would be (2,1).
+                -->
+                <QUERY name="SERIES" orientation="VERTICAL" headers="false" startRow="8" startColumn="1">
+                    <!--
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                                               of the worksheet. Any parameter used in the query will be replaced by the
+                                               parameter value during runtime. The identifier used to specify a parameter
+                                               must match the parameterIdentifier property in the configuration. See
+                                               config/config.properties.
+                    -->
+                    <QUERY_STRING>
+                    </QUERY_STRING>
+                </QUERY>
+                <QUERY name="SAMPLES" orientation="HORIZONTAL" headers="true" startRow="20" startColumn="0" shiftAfter="3">
+                    <!--
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                                               of the worksheet. Any parameter used in the query will be replaced by the
+                                               parameter value during runtime. The identifier used to specify a parameter
+                                               must match the parameterIdentifier property in the configuration. See
+                                               config/config.properties.
+                    -->
+                    <QUERY_STRING>SELECT
+                        s.BARCODE "Sample_name",
+                        null "title",
+                        SAMPLE_SOURCE "Source Name",
+                        t.NAME "Organism",
+                        s.TIME_POINT "characteristics: Time Point",
+                        'Male' "characteristics : Gender",
+                        sub.SOURCE_ID "MaHPIC Non Human Primate ID",
+                        SPECIMEN_TYPE "molecule",
+                        null "processed data file",
+                        null "processed data file",
+                        FILE_NAME "raw file"
+                        --f.MD5_CHECKSUM
+                        FROM
+                        FILE_METADATA_TRACKER.FILE_REGISTRY f,
+                        FILE_METADATA_TRACKER.FILE_REGISTRY_BARCODE fb,
+                        SPECIMEN s ,
+                        SUBJECT sub,
+                        Taxon t
+                        WHERE
+                        sub.TAXON_ID = t.TAXON_ID AND
+                        fb.BARCODE = s.BARCODE AND
+                        s.SUBJECT_ID = sub.SUBJECT_ID AND
+                        f.FILE_ID = fb.FILE_ID AND
+                        f.FILE_TYPE = 'FASTQ' AND
+                        f.EXPERIMENT_NAME = '&amp;EXPERIMENT_NAME'
+                        ORDER BY s.TIME_POINT, sub.NAME, s.SAMPLE_SOURCE
+                    </QUERY_STRING>
+                </QUERY>
+                <QUERY name="PROTOCOLS" orientation="VERTICAL" headers="false" startRow="26" startColumn="1">
+                    <!--
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                                               of the worksheet. Any parameter used in the query will be replaced by the
+                                               parameter value during runtime. The identifier used to specify a parameter
+                                               must match the parameterIdentifier property in the configuration. See
+                                               config/config.properties.
+                    -->
+                    <QUERY_STRING>
+                    </QUERY_STRING>
+                </QUERY>
+                <QUERY name="DATA PROCESSING PIPELINE" orientation="VERTICAL" headers="false" startRow="36" startColumn="1">
+                    <!--
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                                               of the worksheet. Any parameter used in the query will be replaced by the
+                                               parameter value during runtime. The identifier used to specify a parameter
+                                               must match the parameterIdentifier property in the configuration. See
+                                               config/config.properties.
+                    -->
+                    <QUERY_STRING>
+                    </QUERY_STRING>
+                </QUERY>
+                <QUERY name="PROCESSED DATA FILES" orientation="HORIZONTAL" headers="false" startRow="47" startColumn="0">
+                    <!--
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                                               of the worksheet. Any parameter used in the query will be replaced by the
+                                               parameter value during runtime. The identifier used to specify a parameter
+                                               must match the parameterIdentifier property in the configuration. See
+                                               config/config.properties.
+                    -->
+                    <QUERY_STRING>
+                    </QUERY_STRING>
+                </QUERY>
+                <QUERY name="RAW FILES" orientation="HORIZONTAL" headers="false" startRow="53" startColumn="0">
+                    <!--
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                                               of the worksheet. Any parameter used in the query will be replaced by the
+                                               parameter value during runtime. The identifier used to specify a parameter
+                                               must match the parameterIdentifier property in the configuration. See
+                                               config/config.properties.
+                    -->
+                    <QUERY_STRING>
+                    </QUERY_STRING>
+                </QUERY>
+                <QUERY name="PAIRED-END EXPERIMENTS" orientation="HORIZONTAL" headers="false" startRow="59" startColumn="0">
+                    <!--
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                                               of the worksheet. Any parameter used in the query will be replaced by the
+                                               parameter value during runtime. The identifier used to specify a parameter
+                                               must match the parameterIdentifier property in the configuration. See
+                                               config/config.properties.
+                    -->
+                    <QUERY_STRING>
+                    </QUERY_STRING>
+                </QUERY>
+
+            </QUERIES>
+        </SHEET>
+    </SHEETS>
+</TEMPLATE>

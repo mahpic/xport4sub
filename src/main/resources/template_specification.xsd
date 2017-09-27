@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:xerces="http://xerces.apache.org">
+
+    <xs:element name="TEMPLATE" type="TEMPLATEType">
+        <xs:annotation>
+            <xs:documentation>
+                name:(required)       Name of this template.
+                fileType:(required)   Output file type. Output file type should match the input template file type if specified.
+                                      Allowed values: XML, EXCEL, CSV.
+                location:(optional)   location of the template file. If exists, a copy of this template will be populated as
+                specified. Otherwise, the results will be populated into an newly created empty file.
+                outputFile:(optional) name for the output file, otherwise output file will be named -> yyyy-MM-dd_[insert_template_name].
+                                      If no path is specified, output files will be created under "submission" folder.
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+
+    <xs:complexType name="TEMPLATEType">
+        <xs:sequence>
+            <xs:element type="PARAMETERSType" name="PARAMETERS" maxOccurs="1" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>different parameters related to queries of the file are specified
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element type="SHEETSType" name="SHEETS" maxOccurs="1" minOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>for excel file specification about different sheets can be specified
+                        for CSV file one sheet means one .csv file and so forth
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute type="xs:string" name="name" use="required"/>
+        <xs:attribute type="fileType" name="fileType" use="required"/>
+        <xs:attribute type="xs:string" name="location" use="optional"/>
+        <xs:attribute type="xs:string" name="outputFile" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="PARAMETERSType">
+        <xs:sequence>
+            <xs:element type="PARAMETERType" name="PARAMETER" maxOccurs="unbounded" minOccurs="0" />
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="PARAMETERType">
+        <xs:annotation>
+            <xs:documentation>
+                id:(required)    Id of the parameter that will be used as a key in a query.
+                value:(required) The value that will replace the parameter matched by the id in the query.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute type="xs:string" name="id" use="required"/>
+                <xs:attribute type="xs:string" name="value" use="required"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="SHEETSType">
+        <xs:sequence>
+            <xs:element type="SHEETType" name="SHEET" maxOccurs="unbounded" minOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        A submission template often times have multiple worksheets for different types of data/metadata. For each
+                        worksheet to be populated, a new sheet specification should be specified.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="SHEETType">
+        <xs:annotation>
+            <xs:documentation>
+                name: (optional) Sheet name
+                index: (optional) index of sheet (it starts from zero).
+
+                NOTE: If both attributes exist, name will be considered first.
+                IMPORTANT: At least one of the attributes should be specified. Both attributes can not be left blank
+                at the same time.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="SHEET_STYLEType" name="SHEET_STYLE" minOccurs="0" maxOccurs="1"/>
+            <xs:element type="QUERIESType" name="QUERIES">
+                <xs:annotation>
+                    <xs:documentation>
+                        Sometimes a worksheet may have multiple sections which should be populated with different information.
+                        In those cases, multiple queries can be mapped to different sections of the worksheet using row &amp; column
+                        indices. In all other cases, each sheet would only have one corresponding query.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute type="xs:string" name="name" use="optional"/>
+        <xs:attribute type="xs:string" name="index" use="optional"/>
+        <xs:assert test="(@name or @index)"/>
+    </xs:complexType>
+
+    <xs:complexType name="QUERIESType">
+        <xs:sequence>
+            <xs:element type="QUERYType" name="QUERY" minOccurs="1" maxOccurs="unbounded">
+            </xs:element>
+        </xs:sequence>
+
+    </xs:complexType>
+
+    <xs:complexType name="QUERYType">
+        <xs:annotation>
+            <xs:documentation>
+                name:(optional)         name of this query.
+                orientation:(optional)  if horizontal, records returned by the query will be inserted row by row.
+                When vertical, records will be inserted in a vertical fashion
+                (i.e., one column per record).
+                Allowed values: HORIZONTAL, VERTICAL. Default: HORIZONTAL
+                headers:(optional)      If true, column labels will be inserted before the first record..
+                Allowed values: true, false. Default: false.
+                startRow:(required)     Indicates which row to begin inserting the records.
+                startColumn:(required)  Indicates which column to being inserting the records.
+                shiftAfter:(optional)   For the template that has more than one section, and the number of rows or
+                columns are more than specified in template it has value of the index that
+                should be shifted
+                IMPORTANT NOTE: These indices are 0-based. For example, A1 cell in excel would be (0,0) where as
+                B3 would be (2,1).
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element type="STYLEType" name="STYLE" minOccurs="0" maxOccurs="1" />
+            <xs:element type="STYLEType" name="HEADER_STYLE" minOccurs="0" maxOccurs="1" />
+            <xs:element type="xs:string" name="QUERY_STRING" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        QueryString:(required) The database query that is responsible for populating the specified section
+                        of the worksheet. Any parameter used in the query will be replaced by the
+                        parameter value during runtime. The identifier used to specify a parameter
+                        must match the parameterIdentifier property in the configuration. See
+                        config/config.properties.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element type="FieldMappingType" name="FIELD_MAPPING" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>FieldMapping(optional), when used indicates mapping between each field in the
+                        query result and
+                        the index of the column which the result would be inserted. If orientation is VERTICAL, refers
+                        to the
+                        row index instead.
+                        NOTE: Indices are 0-based and will be offset by the startColumn/Row.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element type="QUERYType" name="QUERY" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Nested sub-query, for advanced formatting.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute type="xs:string" name="name" use="optional"/>
+        <xs:attribute type="orientation" name="orientation" use="optional"/>
+        <xs:attribute type="xs:string" name="headers" use="optional"/>
+        <xs:attribute type="xs:string" name="startRow" use="required"/>
+        <xs:attribute type="xs:string" name="startColumn" use="required"/>
+        <xs:attribute type="xs:string" name="shiftAfter" use="optional"/>
+        <xs:attribute type="xs:string" name="linkToParent" use="optional"/>
+        <xs:assert test="(exists(QUERY) and not(@linkToParent) and QUERY//@linkToParent) or (not(exists(QUERY)))"
+            xerces:message="Possible Reasons:(1)linkToParent is only allowed in a subquery. (2)linkToParent is mandatory for the subquery"
+        />
+    </xs:complexType>
+
+    <xs:complexType name="FieldMappingType">
+        <xs:annotation>
+            <xs:documentation>
+                FieldMapping:(optional) Indicates mapping between each field in the query result and
+                the index of the column which the result would be inserted.
+                If orientation is VERTICAL, refers to the row index instead.
+
+                NOTE: If no field mapping is provided, result fields will be inserted sequentially.
+                NOTE: Indices are 0-based and will be offset by the startColumn/Row.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="FIELD" type="FIELDType" maxOccurs="unbounded" minOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="FIELDType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute type="xs:string" name="mergeTo" use="optional"/>
+                <xs:attribute type="xs:string" name="dataFormat" use="optional"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+
+    <xs:simpleType name="fileType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="EXCEL" />
+            <xs:enumeration value="CSV" />
+            <xs:enumeration value="XML" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="orientation">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="VERTICAL" />
+            <xs:enumeration value="HORIZONTAL" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="STYLEType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute type="xs:short" name="borderTop"/>
+                <xs:attribute type="xs:short" name="borderBottom"/>
+                <xs:attribute type="xs:string" name="fontWeight"/>
+                <xs:attribute type="xs:string" name="fontStyle"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="SHEET_STYLEType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute type="xs:boolean" name="resizeColsToFit"/>
+                <xs:attribute type="xs:boolean" name="autoResizeRows" use="optional"/>
+                <xs:attribute type="xs:int" name="maxColWidth"/>
+                <xs:attribute type="xs:boolean" name="wrapText"/>
+                <xs:attribute type="xs:int" name="freezeRows" use="optional"/>
+                <xs:attribute type="xs:int" name="freezeColumns" use="optional"/>
+
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+</xs:schema>
+
